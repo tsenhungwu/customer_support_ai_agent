@@ -1,6 +1,7 @@
 import faiss
 import re
 from sentence_transformers import SentenceTransformer
+import numpy as np
 
 
 def clean(text: str) -> str:
@@ -40,7 +41,7 @@ def build_faiss_index(docs: list, model: SentenceTransformer, index: faiss.Index
     """
     Build a FAISS index for cosine similarity via inner product from a list of documents.
     """
-    for batch in batch_iter(docs, batch_size):
+    for i, batch in enumerate(batch_iter(docs, batch_size)):
         
         texts = [d["embedding_text"] for d in batch]
 
@@ -51,14 +52,17 @@ def build_faiss_index(docs: list, model: SentenceTransformer, index: faiss.Index
             show_progress_bar=False
         ).astype("float32")
 
+        print("Writing embeddings with shape:", emb.shape)
+        np.save(f"artifacts/embeddings/batch_{i:05d}.npy", emb)
+
         # normalize for cosine similarity
         faiss.normalize_L2(emb)
 
         # add to index (NO storing embeddings in RAM)
         index.add(emb)
-    
-    print("Embedded shape:", emb.shape)
-    print("Indexed {} documents.".format(index.ntotal))
+
+    print("Writing indexed {} documents.".format(index.ntotal))
+    faiss.write_index(index, "artifacts/indexes/training.index")
 
     return index
 
@@ -77,6 +81,3 @@ def search(query: str, index: faiss.Index, model: SentenceTransformer, docs: lis
         results.append(docs[idx])
 
     return results
-
-
-

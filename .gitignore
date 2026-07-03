@@ -219,3 +219,6 @@ __marimo__/
 
 # Others
 .DS_Store
+
+# Repo related
+artifacts/
