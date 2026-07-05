@@ -28,11 +28,31 @@ def batch_iter(data: list, batch_size: int) -> list:
         yield data[i:i + batch_size]
 
 
-def build_index(embed_dim: int) -> faiss.Index:
+def build_index(index_type:str, embed_dim: int, train_embeddings=None) -> faiss.Index:
     """
     Build a FAISS index for cosine similarity via inner product.
     """
-    index = faiss.IndexFlatIP(embed_dim)
+    if index_type == "flat":
+        index = faiss.IndexFlatIP(embed_dim)
+
+    elif index_type == "ivf":
+        quantizer = faiss.IndexFlatIP(embed_dim)
+        nlist = 100  # cluster count (tunable)
+        index = faiss.IndexIVFFlat(quantizer, embed_dim, nlist)
+
+        # IVF MUST be trained
+        if train_embeddings is None:
+            raise ValueError("IVF requires train_embeddings")
+
+        index.train(train_embeddings)
+
+    elif index_type == "hnsw":
+        M = 32  # graph connectivity (tunable)
+        index = faiss.IndexHNSWFlat(embed_dim, M)
+        index.hnsw.efConstruction = 200
+
+    else:
+        raise ValueError(f"Unsupported index_type: {index_type}")
 
     return index
 
