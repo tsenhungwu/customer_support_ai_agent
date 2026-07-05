@@ -13,7 +13,7 @@ def build_pipeline(docs: list[dict]):
     """
     Build the pipeline for the customer support AI agent.
     """
-    index = build_index(EMBED_DIM)
+    index = build_index(index_type="flat", embed_dim=EMBED_DIM)
     index = build_faiss_index(docs, MODEL, index, BATCH_SIZE)
     return index
 
